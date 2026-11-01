@@ -1,0 +1,12 @@
+{
+  "name": "node-devops-app",
+  "version": "1.0.0",
+  "description": "Aplicacion básica en Node.js para despliegue en Cloud Run",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
