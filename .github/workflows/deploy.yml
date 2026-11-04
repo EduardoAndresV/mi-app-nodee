@@ -6,11 +6,11 @@ on:
       - main
 
 env:
-  PROJECT_ID: mi-app-node-prod
+  PROJECT_ID: mi-app-node-prod #Nombre del Proyecto GCP
   REGION: us-central1
-  SERVICE_NAME: mi-app-node
+  SERVICE_NAME: mi-app-node #Nombre del servicio Cloud Run
   GAR_LOCATION: us-central1
-  REPOSITORY: cloud-run-source-deploy
+  REPOSITORY: cloud-run-source-deploy #Artifact Registry
 
 jobs:
   build-and-deploy:
