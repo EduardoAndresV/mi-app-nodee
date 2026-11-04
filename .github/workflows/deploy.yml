@@ -8,7 +8,7 @@ on:
 env:
   PROJECT_ID: mi-app-node-prod
   REGION: us-central1
-  SERVICE_NAME: mi-app-nodee
+  SERVICE_NAME: mi-app-node
   GAR_LOCATION: us-central1
   REPOSITORY: cloud-run-source-deploy
 
