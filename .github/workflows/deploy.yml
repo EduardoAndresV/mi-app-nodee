@@ -1,12 +1,10 @@
 name: Despliegue Automatizado a Cloud Run con GitHub Actions
 
-# 1. Evento disparador: Se ejecuta solo al hacer push a la rama main
 on:
   push:
     branches:
       - main
 
-# 2. Definición de variables de entorno del proyecto
 env:
   PROJECT_ID: mi-app-node-prod
   REGION: us-central1
@@ -19,33 +17,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Paso A: Descargar el código fuente del repositorio
+      # 1. Obtener el código fuente del repositorio
       - name: Checkout del código
         uses: actions/checkout@v4
 
-      # Paso B: Autenticarse en Google Cloud mediante el secreto guardado
-      - name: Autenticar en GCP
+      # 2. Autenticar en GCP usando el secreto guardado (GCP_SA_KEY)
+      - name: Autenticar en Google Cloud
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      # Paso C: Configurar el CLI de gcloud en la máquina virtual de GitHub
+      # 3. Configurar la herramienta gcloud CLI
       - name: Configurar gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
 
-      # Paso D: Autenticar Docker con Google Artifact Registry
+      # 4. Autenticar Docker con Artifact Registry
       - name: Autenticar Docker en GCP
         run: |-
           gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
 
-      # Paso E: Compilar la imagen de Docker usando tu Dockerfile y hacer Push
+      # 5. Compilar la imagen de Docker y hacer Push
       - name: Build y Push de la imagen Docker
         run: |-
           IMAGE_TAG="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
           docker build -t "$IMAGE_TAG" .
           docker push "$IMAGE_TAG"
 
-      # Paso F: Desplegar la nueva imagen en Cloud Run
+      # 6. Desplegar la imagen compilada en Cloud Run
       - name: Desplegar en Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
         with:
