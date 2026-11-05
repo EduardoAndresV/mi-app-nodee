@@ -5,49 +5,76 @@ on:
     branches:
       - main
 
+#Variables son exclusivamente para configurar y parametrizar la infraestructura de(GCP) 
+#y el pipeline de CI/CD de GitHub Actions.
 env:
   PROJECT_ID: mi-app-node-prod #Nombre del Proyecto GCP
-  REGION: us-central1
+  REGION: us-central1 #Especifica la región geográfica de GCP donde reside el servicio.
   SERVICE_NAME: mi-app-node #Nombre del servicio Cloud Run
   GAR_LOCATION: us-central1
-  REPOSITORY: cloud-run-source-deploy #Artifact Registry
+  REPOSITORY: cloud-run-source-deploy #Artifact Registry, despligue imagen de doker
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest #Define el entorno de ejecución
 
     steps:
       # 1. Obtener el código fuente del repositorio
+      #Etiqueta descrptiva
       - name: Checkout del código
+      # Use: instrucción en GitHub Actions para descargar y ejecutar una Acción reutilizable
         uses: actions/checkout@v4
 
       # 2. Autenticar en GCP usando el secreto guardado (GCP_SA_KEY)
-      - name: Autenticar en Google Cloud
+      - name: Autenticar en Google Cloud 
         uses: google-github-actions/auth@v2
+              #Es la instrucción que le indica a GitHub Actions que descargue y ejecute la Action oficial de 
+              #autenticación mantenida por Google Cloud (auth@v2). 
+              
         with:
+        #Es el bloque de parámetros de entrada (inputs) que exige esta acción para funcionar.
           credentials_json: ${{ secrets.GCP_SA_KEY }}
+          #Es el parámetro donde le entregas a la acción el contenido de la clave JSON de la Service Account que creaste en GCP.
 
       # 3. Configurar la herramienta gcloud CLI
       - name: Configurar gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
+              #Es la ruta del repositorio oficial que descarga e instala la herramienta de 
+              #comandos gcloud (Google Cloud SDK) directamente en la máquina virtual donde corre tu pipeline
 
       # 4. Autenticar Docker con Artifact Registry
       - name: Autenticar Docker en GCP
+      #run: ejecute una instrucción directa en la terminal de línea de comandos de la máquina virtual (Ubuntu)
+      
+      #gcloud auth configure-docker: es el comando oficial de la herramienta de Google Cloud (gcloud) que registra a Artifact Registry 
+      #como un helper de credenciales seguro dentro del archivo de configuración global de Docker (Permisos entre docker y Artifact Registry).
+
+      #--quiet: (flag) deshabilita las preguntas o confirmaciones interactivas por consola
         run: |-
           gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
 
-      # 5. Compilar la imagen de Docker y hacer Push
+      # 5.3 Compilar la imagen de Docker y hacer Push
       - name: Build y Push de la imagen Docker
+        
+        #Construye varible IMAGE_TAG (URL con las .env variables de entorno)
+        #github.sha: Variable de contexto Github, codigo hash es una firma única e irrepetible generada por Git para un cambio específico de código. 
+        #IMAGE_TAG="us-central1-docker.pkg.dev/mi-app-node-prod/cloud-run-source-deploy/mi-app-node:7a3ccf0b9b73a6b6020b4c4a852b12a41400c6d8"
+      
         run: |-
           IMAGE_TAG="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
           docker build -t "$IMAGE_TAG" .
           docker push "$IMAGE_TAG"
 
+      #se encarga de llamar a la acción oficial de Google Cloud para tomar la imagen Docker que compilaste y subiste 
+      #a Artifact Registry en el paso anterior y desplegarla como una nueva revisión pública en el servicio de Google Cloud Run.  
       # 6. Desplegar la imagen compilada en Cloud Run
       - name: Desplegar en Cloud Run
+        #Le indica a GitHub Actions que descargue y ejecute el plugin/acción oficial publicado por Google Cloud. 
+        #Esta acción abstrae la lógica necesaria para comunicarse vía API con Google Cloud y solicitar la actualización del servicio.
         uses: google-github-actions/deploy-cloudrun@v2
         with:
-          service: ${{ env.SERVICE_NAME }}
-          region: ${{ env.REGION }}
+          service: ${{ env.SERVICE_NAME }} #Define el nombre del servicio objetivo en Cloud Run.
+          region: ${{ env.REGION }} #Especifica la región geográfica de GCP donde reside el servicio.
           image: ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
-          flags: '--allow-unauthenticated'
+          #Especifica la URL exacta e inmutable de la imagen guardada en Google Artifact Registry que se va a desplegar en el contenedor.
+          flags: '--allow-unauthenticated' #flag establece la política de acceso del servicio como público
