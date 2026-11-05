@@ -16,11 +16,11 @@ env:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest #Define el entorno de ejecución
+    runs-on: ubuntu-latest #Define el entorno de ejecución, latest : ultima version
 
     steps:
       # 1. Obtener el código fuente del repositorio
-      #Etiqueta descrptiva
+      #Etiqueta descrptiva (Nombres de paso en Action)
       - name: Checkout del código
       # Use: instrucción en GitHub Actions para descargar y ejecutar una Acción reutilizable
         uses: actions/checkout@v4
